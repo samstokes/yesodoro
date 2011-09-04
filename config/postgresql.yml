@@ -1,0 +1,20 @@
+Default: &defaults
+  user: yesodoro
+  password: yesodoro
+  host: localhost
+  port: 5432
+  database: yesodoro
+
+Development:
+  <<: *defaults
+
+Test:
+  database: yesodoro_test
+  <<: *defaults
+
+Staging:
+  database: yesodoro_staging
+
+Production:
+  database: yesodoro_production
+  <<: *defaults
