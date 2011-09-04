@@ -6,6 +6,11 @@ import Data.Text (Text)
 import Yesod.Auth (maybeAuthId)
 import Foundation
 
+
+redirectTemporary :: HasReps a => YesodoroRoute -> Handler a
+redirectTemporary = redirect RedirectTemporary
+
+
 -- This is a handler function for the GET request method on the RootR
 -- resource pattern. All of your resource patterns are defined in
 -- config/routes
@@ -44,7 +49,7 @@ postTasksR = do
   case result of
     FormSuccess task -> do
       runDB $ insert task
-      redirect RedirectTemporary RootR
+      redirectTemporary RootR
     _ -> undefined
 
 
