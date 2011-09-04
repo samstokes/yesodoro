@@ -1,0 +1,13 @@
+$if null tasks
+  <p>You have no tasks.
+$else
+  <table><tbody>
+    $forall idAndTask <- tasks
+      <tr .task .#{taskState $ snd idAndTask}
+        <th .title>#{taskTitle $ snd idAndTask}
+        <td>^{setTaskDonenessButton idAndTask}
+        <td>^{oneButton "Delete" (DeleteTaskR $ fst idAndTask)}
+
+<form method=POST action=@{TasksR} enctype=#{enctype}
+  ^{taskWidget}
+  <input type=submit value=Add

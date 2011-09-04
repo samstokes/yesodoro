@@ -6,7 +6,7 @@
 
 / RootR GET
 
-/tasks TasksR POST
+/tasks TasksR GET POST
 /tasks/#TaskId/complete CompleteTaskR POST
 /tasks/#TaskId/restart RestartTaskR POST
 /tasks/#TaskId/delete DeleteTaskR POST

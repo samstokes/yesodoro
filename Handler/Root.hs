@@ -19,16 +19,29 @@ redirectTemporary = redirect RedirectTemporary
 -- functions. You can spread them across multiple files if you are so
 -- inclined, or create a single monolithic file.
 getRootR :: Handler RepHtml
-getRootR = do
-    mu <- maybeAuth
-    let uid = fmap fst mu
-    tasks <- maybe (return []) (runDB . userTasks) uid
-    ((_, taskWidget), _) <- maybe (return ((undefined, [whamlet|""|]), undefined)) (generateFormPost . taskForm) uid
-    defaultLayout $ do
+getRootR = maybeAuth >>= getRootR' where
+  getRootR' :: Maybe (UserId, User) -> Handler RepHtml
+  getRootR' Nothing = defaultLayout $ do
         setTitle "yesodoro"
         addWidget $(widgetFile "homepage")
-  where
-    userTasks userId = selectList [TaskUser ==. userId] [Asc TaskDone]
+  getRootR' (Just _) = redirectTemporary TasksR
+
+
+getTasksR :: Handler RepHtml
+getTasksR = maybeAuth >>= getTasksR' where
+  getTasksR' :: Maybe (UserId, User) -> Handler RepHtml
+
+  getTasksR' Nothing = redirectTemporary RootR
+
+  getTasksR' (Just (userId, user)) = do
+    tasks <- runDB $ userTasks userId
+    ((_, taskWidget), enctype) <- generateFormPost $ taskForm userId
+    defaultLayout $ do
+        setTitle "tasks"
+        addWidget $(widgetFile "tasks")
+
+  userTasks userId = selectList [TaskUser ==. userId] [Asc TaskDone]
+
 
 oneButton :: Text -> YesodoroRoute -> Widget
 oneButton label route = [whamlet|
@@ -43,14 +56,16 @@ taskForm uid = renderDivs $ Task uid
   <*> pure False
 
 postTasksR :: Handler RepHtml
-postTasksR = do
-  uid <- maybeAuthId
-  ((result, taskWidget), _) <- maybe (return ((FormMissing, [whamlet|""|]), undefined)) (runFormPost . taskForm) uid
-  case result of
-    FormSuccess task -> do
-      runDB $ insert task
-      redirectTemporary RootR
-    _ -> undefined
+postTasksR = maybeAuthId >>= postTasksR' where
+  postTasksR' :: Maybe UserId -> Handler RepHtml
+  postTasksR' Nothing = redirectTemporary RootR
+  postTasksR' (Just userId) = do
+    ((result, taskWidget), _) <- runFormPost $ taskForm userId
+    case result of
+      FormSuccess task -> do
+        runDB $ insert task
+        redirectTemporary RootR
+      _ -> undefined -- TODO
 
 
 postCompleteTaskR :: TaskId -> Handler RepHtml
