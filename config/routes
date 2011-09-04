@@ -5,3 +5,8 @@
 /robots.txt RobotsR GET
 
 / RootR GET
+
+/tasks TasksR POST
+/tasks/#TaskId/complete CompleteTaskR POST
+/tasks/#TaskId/restart RestartTaskR POST
+/tasks/#TaskId/delete DeleteTaskR POST

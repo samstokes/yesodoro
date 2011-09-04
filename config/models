@@ -7,3 +7,11 @@ Email
     user UserId Maybe Update
     verkey Text Maybe Update
     UniqueEmail email
+Task
+    user UserId
+    title Text
+    pomos Int default=0
+    done Bool default=false
+Estimate
+    task TaskId
+    pomos Int
