@@ -20,7 +20,6 @@ getRootR = do
     tasks <- maybe (return []) (runDB . userTasks) uid
     ((_, taskWidget), _) <- maybe (return ((undefined, [whamlet|""|]), undefined)) (generateFormPost . taskForm) uid
     defaultLayout $ do
-        h2id <- lift newIdent
         setTitle "yesodoro"
         addWidget $(widgetFile "homepage")
   where
