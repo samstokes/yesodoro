@@ -1,5 +1,4 @@
-<h1>Hello
-<h2 ##{h2id}>You do not have Javascript enabled.
+<h1>Yesodoro
 $maybe u <- mu
   <p
     You are logged in as #{userIdent $ snd u}. #
