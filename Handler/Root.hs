@@ -64,7 +64,7 @@ postTasksR = maybeAuthId >>= postTasksR' where
     case result of
       FormSuccess task -> do
         runDB $ insert task
-        redirectTemporary RootR
+        redirectTemporary TasksR
       _ -> undefined -- TODO
 
 
@@ -77,7 +77,7 @@ postRestartTaskR = setTaskDoneness False
 setTaskDoneness :: Bool -> TaskId -> Handler RepHtml
 setTaskDoneness done taskId = do
   runDB $ update taskId [TaskDone =. done]
-  redirect RedirectTemporary RootR
+  redirect RedirectTemporary TasksR
 
 setTaskDonenessRoute :: (TaskId, Task) -> YesodoroRoute
 setTaskDonenessRoute (taskId, task) = route taskId
