@@ -93,4 +93,4 @@ setTaskDonenessButton (taskId, task) = oneButton action (route taskId)
 postDeleteTaskR :: TaskId -> Handler RepHtml
 postDeleteTaskR taskId = do
   runDB $ delete taskId
-  redirect RedirectTemporary RootR
+  redirectTemporary TasksR
