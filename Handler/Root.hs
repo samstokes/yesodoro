@@ -3,6 +3,7 @@ module Handler.Root where
 
 import Control.Applicative
 import Data.Text (Text)
+import Database.Persist.GenericSql.Raw (SqlPersist)
 import Yesod.Auth (maybeAuthId)
 import Foundation
 
@@ -69,15 +70,15 @@ postTasksR = maybeAuthId >>= postTasksR' where
 
 
 postCompleteTaskR :: TaskId -> Handler RepHtml
-postCompleteTaskR = setTaskDoneness True
+postCompleteTaskR = updateAndRedirect TasksR [TaskDone =. True]
 
 postRestartTaskR :: TaskId -> Handler RepHtml
-postRestartTaskR = setTaskDoneness False
+postRestartTaskR = updateAndRedirect TasksR [TaskDone =. False]
 
-setTaskDoneness :: Bool -> TaskId -> Handler RepHtml
-setTaskDoneness done taskId = do
-  runDB $ update taskId [TaskDone =. done]
-  redirectTemporary TasksR
+updateAndRedirect :: (PersistEntity val, HasReps a) => YesodoroRoute -> [Update val] -> Key SqlPersist val -> Handler a
+updateAndRedirect route updates fieldId = do
+  runDB $ update fieldId updates
+  redirectTemporary route
 
 setTaskDonenessRoute :: (TaskId, Task) -> YesodoroRoute
 setTaskDonenessRoute (taskId, task) = route taskId
