@@ -10,3 +10,4 @@
 /tasks/#TaskId/complete CompleteTaskR POST
 /tasks/#TaskId/restart RestartTaskR POST
 /tasks/#TaskId/delete DeleteTaskR POST
+/tasks/#TaskId/pomo TaskAddPomoR POST

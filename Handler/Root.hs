@@ -95,3 +95,6 @@ postDeleteTaskR :: TaskId -> Handler RepHtml
 postDeleteTaskR taskId = do
   runDB $ delete taskId
   redirectTemporary TasksR
+
+postTaskAddPomoR :: TaskId -> Handler RepHtml
+postTaskAddPomoR = updateAndRedirect TasksR [TaskPomos +=. 1]

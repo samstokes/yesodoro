@@ -9,6 +9,10 @@ $else
         <th .title>#{taskTitle $ snd idAndTask}
         <td>^{setTaskDonenessButton idAndTask}
         <td>^{oneButton "Delete" (DeleteTaskR $ fst idAndTask)}
+        <td
+          $forall pomo <- replicate (taskPomos $ snd idAndTask) undefined
+            ✓
+        <td>^{oneButton "Pomo" (TaskAddPomoR $ fst idAndTask)}
 
 <form method=POST action=@{TasksR} enctype=#{enctype}
   ^{taskWidget}
