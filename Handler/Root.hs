@@ -77,7 +77,7 @@ postRestartTaskR = setTaskDoneness False
 setTaskDoneness :: Bool -> TaskId -> Handler RepHtml
 setTaskDoneness done taskId = do
   runDB $ update taskId [TaskDone =. done]
-  redirect RedirectTemporary TasksR
+  redirectTemporary TasksR
 
 setTaskDonenessRoute :: (TaskId, Task) -> YesodoroRoute
 setTaskDonenessRoute (taskId, task) = route taskId
