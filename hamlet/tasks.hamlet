@@ -6,13 +6,25 @@ $else
   <table><tbody>
     $forall idAndTask <- tasks
       <tr .task .#{taskState $ snd idAndTask}
-        <th .title>#{taskTitle $ snd idAndTask}
-        <td>^{setTaskDonenessButton idAndTask}
-        <td>^{oneButton "Delete" (DeleteTaskR $ fst idAndTask)}
+        <th .title rowspan=2>#{taskTitle $ snd idAndTask}
+        <td rowspan=2>^{setTaskDonenessButton idAndTask}
+        <td rowspan=2>^{oneButton "Delete" (DeleteTaskR $ fst idAndTask)}
+        <td>
+          $with estimates <- M.findWithDefault mempty (fst idAndTask) tasksEstimates
+            $if null estimates
+              <form method=POST action=@{TaskAddEstimateR $ fst idAndTask}
+                $forall numPomos <- estimateOptions
+                  <button name=pomos value=#{show numPomos}
+                    #{show numPomos}
+            $else
+              $with firstEstimate <- estimatePomos $ snd $ head estimates
+                $forall estimate <- replicate firstEstimate undefined
+                  ❏
+        <td rowspan=2>^{oneButton "Pomo" (TaskAddPomoR $ fst idAndTask)}
+      <tr .task .#{taskState $ snd idAndTask}
         <td
           $forall pomo <- replicate (taskPomos $ snd idAndTask) undefined
             ✓
-        <td>^{oneButton "Pomo" (TaskAddPomoR $ fst idAndTask)}
 
 <form method=POST action=@{TasksR} enctype=#{enctype}
   ^{taskWidget}

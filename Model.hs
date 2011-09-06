@@ -23,3 +23,6 @@ taskState task = if taskDone task then "done" else "pending"
 taskActionName :: Task -> Text
 taskActionName task | taskDone task = "Restart"
                     | otherwise     = "Complete"
+
+estimateOptions :: [Int]
+estimateOptions = [2 ^ x | x <- [0 .. 4]]

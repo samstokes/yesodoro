@@ -2,9 +2,15 @@
 module Handler.Root where
 
 import Control.Applicative
-import Data.Text (Text)
+import Control.Monad
+import Data.Monoid
+import Data.Map (Map)
+import qualified Data.Map as M
+import Data.Text (Text, pack)
+import Data.Text.Read
 import Database.Persist.GenericSql.Raw (SqlPersist)
 import Yesod.Auth (maybeAuthId)
+import Yesod.Handler
 import Foundation
 
 
@@ -36,12 +42,15 @@ getTasksR = maybeAuth >>= getTasksR' where
 
   getTasksR' (Just (userId, user)) = do
     tasks <- runDB $ userTasks userId
+    estimates <- mapM (runDB . taskEstimates . fst) tasks
+    let tasksEstimates = M.fromList $ zip (map fst tasks) estimates
     ((_, taskWidget), enctype) <- generateFormPost $ taskForm userId
     defaultLayout $ do
         setTitle "tasks"
         addWidget $(widgetFile "tasks")
 
   userTasks userId = selectList [TaskUser ==. userId] [Asc TaskDone]
+  taskEstimates taskId = selectList [EstimateTask ==. taskId] []
 
 
 oneButton :: Text -> YesodoroRoute -> Widget
@@ -98,3 +107,33 @@ postDeleteTaskR taskId = do
 
 postTaskAddPomoR :: TaskId -> Handler RepHtml
 postTaskAddPomoR = updateAndRedirect TasksR [TaskPomos +=. 1]
+
+postTaskAddEstimateR :: TaskId -> Handler RepHtml
+postTaskAddEstimateR taskId = maybeAuthId >>= postTaskAddEstimateR' taskId where
+  postTaskAddEstimateR' :: TaskId -> Maybe UserId -> Handler RepHtml
+  postTaskAddEstimateR' taskId (Just userId) = do
+    authzedTaskId <- checkAuthz userId taskId
+    pomosParam <- lookupPostParam "pomos"
+    let pomos = do
+        param <- maybeToEither "no pomos" $ pomosParam
+        (num, _) <- decimal param
+        return num
+    postTaskAddEstimateR'' authzedTaskId pomos
+  postTaskAddEstimateR' _ Nothing = redirectTemporary RootR
+
+  checkAuthz :: UserId -> TaskId -> Handler (Maybe TaskId)
+  checkAuthz userId taskId = do
+    maybeIdAndTask <- runDB $ selectFirst [TaskId ==. taskId, TaskUser ==. userId] []
+    return $ fmap fst maybeIdAndTask
+
+  postTaskAddEstimateR'' :: Maybe TaskId -> Either String Int -> Handler RepHtml
+  postTaskAddEstimateR'' (Just taskId) (Right pomos) = do
+    runDB $ insert $ Estimate taskId pomos
+    redirectTemporary TasksR
+  postTaskAddEstimateR'' authzedTask pomosOrError = do
+    $(logInfo) $ pack $ "task: " ++ show authzedTask ++ "; pomos: " ++ show pomosOrError
+    redirectTemporary TasksR
+
+maybeToEither :: String -> Maybe a -> Either String a
+maybeToEither msg Nothing = Left msg
+maybeToEither _ (Just v) = Right v

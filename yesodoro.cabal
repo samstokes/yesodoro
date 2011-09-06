@@ -82,6 +82,7 @@ executable         yesodoro
                  , warp
                  , blaze-builder
                  , cmdargs
+                 , containers
 
     if !os(windows)
          build-depends: unix
