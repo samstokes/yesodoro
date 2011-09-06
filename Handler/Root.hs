@@ -47,7 +47,7 @@ getTasksR = maybeAuth >>= getTasksR' where
 oneButton :: Text -> YesodoroRoute -> Widget
 oneButton label route = [whamlet|
   <form method=POST action=@{route}
-    <input type=submit value=#{label}
+    <button>#{label}
 |]
 
 taskForm :: UserId -> Html -> Form Yesodoro Yesodoro (FormResult Task, Widget)
