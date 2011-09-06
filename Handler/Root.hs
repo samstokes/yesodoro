@@ -102,6 +102,7 @@ setTaskDonenessButton (taskId, task) = oneButton action (route taskId)
 
 postDeleteTaskR :: TaskId -> Handler RepHtml
 postDeleteTaskR taskId = do
+  runDB $ deleteWhere [EstimateTask ==. taskId]
   runDB $ delete taskId
   redirectTemporary TasksR
 
