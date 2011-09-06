@@ -1,2 +1,4 @@
+.task .title
+    text-align: left
 .task.done .title
     text-decoration: line-through
