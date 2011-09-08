@@ -1,0 +1,19 @@
+<tr .task .#{taskState task}
+  <th .title rowspan=2>#{taskTitle task}
+  <td rowspan=2>^{setTaskDonenessButton taskId task}
+  <td rowspan=2>^{oneButton "Delete" (DeleteTaskR taskId)}
+  <td>
+    $if null estimates
+      <form method=POST action=@{TaskAddEstimateR taskId}
+        $forall numPomos <- estimateOptions
+          <button name=pomos value=#{show numPomos}
+            #{show numPomos}
+    $else
+      $with firstEstimate <- estimatePomos $ snd $ head estimates
+        $forall estimate <- replicate firstEstimate undefined
+          ❏
+  <td rowspan=2>^{oneButton "Pomo" (TaskAddPomoR taskId)}
+<tr .task .#{taskState task}
+  <td
+    $forall pomo <- replicate (taskPomos task) undefined
+      ✓

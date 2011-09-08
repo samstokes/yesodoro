@@ -51,6 +51,7 @@ getTasksR = maybeAuth >>= getTasksR' where
 
   userTasks userId = selectList [TaskUser ==. userId] [Asc TaskDone]
   taskEstimates taskId = selectList [EstimateTask ==. taskId] []
+  taskTr (taskId, task) estimates = $(widgetFile "tasks/task-tr")
 
 
 oneButton :: Text -> YesodoroRoute -> Widget
@@ -94,8 +95,8 @@ setTaskDonenessRoute (taskId, task) = route taskId
   where route | taskDone task = RestartTaskR
               | otherwise     = CompleteTaskR
 
-setTaskDonenessButton :: (TaskId, Task) -> Widget
-setTaskDonenessButton (taskId, task) = oneButton action (route taskId)
+setTaskDonenessButton :: TaskId -> Task -> Widget
+setTaskDonenessButton taskId task = oneButton action (route taskId)
   where action = taskActionName task
         route | taskDone task = RestartTaskR
               | otherwise     = CompleteTaskR
