@@ -1,4 +1,4 @@
 .task .title
     text-align: left
-.task.done .title
+.task.done .title, .task.done .estimate, .task.done .pomos
     text-decoration: line-through
