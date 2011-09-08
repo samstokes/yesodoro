@@ -3,6 +3,7 @@ module Handler.Root where
 
 import Control.Applicative
 import Control.Monad
+import Data.List (partition)
 import Data.Monoid
 import Data.Map (Map)
 import qualified Data.Map as M
@@ -42,6 +43,7 @@ getTasksR = maybeAuth >>= getTasksR' where
 
   getTasksR' (Just (userId, user)) = do
     tasks <- runDB $ userTasks userId
+    let (done, pending) = partition (taskDone . snd) tasks
     estimates <- mapM (runDB . taskEstimates . fst) tasks
     let tasksEstimates = M.fromList $ zip (map fst tasks) estimates
     ((_, taskWidget), enctype) <- generateFormPost $ taskForm userId

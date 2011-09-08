@@ -1,13 +1,22 @@
 <h1>Pomos!
 
-$if null tasks
-  <p>You have no tasks.
+<h2>TODO
+
+$if null pending
+  <p>Nothing to do. Congratulations! Why not take the day off?
 $else
   <table><tbody>
-    $forall idAndTask <- tasks
+    $forall idAndTask <- pending
       $with estimates <- M.findWithDefault mempty (fst idAndTask) tasksEstimates
         ^{taskTr idAndTask estimates}
 
 <form method=POST action=@{TasksR} enctype=#{enctype}
   ^{taskWidget}
   <input type=submit value=Add
+
+$if not (null done)
+  <h2>Done
+  <table><tbody>
+    $forall idAndTask <- done
+      $with estimates <- M.findWithDefault mempty (fst idAndTask) tasksEstimates
+        ^{taskTr idAndTask estimates}
