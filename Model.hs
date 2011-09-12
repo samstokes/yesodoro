@@ -17,6 +17,12 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] $(persistFile "config/mode
 newtype TaskState = TaskState Text
   deriving (ToHtml, IsString)
 
+
+data NewTask = NewTask { newTaskTitle :: Text } deriving (Show)
+
+newTask :: UserId -> NewTask -> Task
+newTask uid (NewTask title) = Task uid title 0 False
+
 taskState :: Task -> TaskState
 taskState task = if taskDone task then "done" else "pending"
 

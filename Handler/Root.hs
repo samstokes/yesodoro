@@ -46,7 +46,7 @@ getTasksR = maybeAuth >>= getTasksR' where
     let (done, pending) = partition (taskDone . snd) tasks
     estimates <- mapM (runDB . taskEstimates . fst) tasks
     let tasksEstimates = M.fromList $ zip (map fst tasks) estimates
-    ((_, taskWidget), enctype) <- generateFormPost $ taskForm userId
+    ((_, taskWidget), enctype) <- generateFormPost taskForm
     defaultLayout $ do
         setTitle "tasks"
         addWidget $(widgetFile "tasks")
@@ -62,21 +62,19 @@ oneButton label route = [whamlet|
     <button>#{label}
 |]
 
-taskForm :: UserId -> Html -> Form Yesodoro Yesodoro (FormResult Task, Widget)
-taskForm uid = renderDivs $ Task uid
-  <$> areq textField "Title" Nothing
-  <*> pure 0
-  <*> pure False
+taskForm :: Html -> Form Yesodoro Yesodoro (FormResult NewTask, Widget)
+taskForm = renderDivs $ NewTask <$> areq textField "Title" Nothing
 
 postTasksR :: Handler RepHtml
 postTasksR = maybeAuthId >>= postTasksR' where
   postTasksR' :: Maybe UserId -> Handler RepHtml
   postTasksR' Nothing = redirectTemporary RootR
   postTasksR' (Just userId) = do
-    ((result, taskWidget), _) <- runFormPost $ taskForm userId
+    ((result, taskWidget), _) <- runFormPost taskForm
     case result of
       FormSuccess task -> do
-        runDB $ insert task
+        let task' = newTask userId task
+        runDB $ insert task'
         redirectTemporary TasksR
       _ -> undefined -- TODO
 
