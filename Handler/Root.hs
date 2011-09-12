@@ -79,15 +79,18 @@ postTasksR = maybeAuthId >>= postTasksR' where
 
 
 postCompleteTaskR :: TaskId -> Handler RepHtml
-postCompleteTaskR = updateAndRedirect TasksR [TaskDone =. True]
+postCompleteTaskR = updateAndRedirectR TasksR [TaskDone =. True]
 
 postRestartTaskR :: TaskId -> Handler RepHtml
-postRestartTaskR = updateAndRedirect TasksR [TaskDone =. False]
+postRestartTaskR = updateAndRedirectR TasksR [TaskDone =. False]
 
-updateAndRedirect :: (PersistEntity val, HasReps a) => YesodoroRoute -> [Update val] -> Key SqlPersist val -> Handler a
-updateAndRedirect route updates fieldId = do
-  runDB $ update fieldId updates
-  redirectTemporary route
+updateAndRedirectR :: HasReps a => YesodoroRoute -> [Update Task] -> TaskId -> Handler a
+updateAndRedirectR route updates taskId = maybeAuthId >>= updateAndRedirectR' route updates taskId where
+  updateAndRedirectR' :: HasReps a => YesodoroRoute -> [Update Task] -> TaskId -> Maybe UserId -> Handler a
+  updateAndRedirectR' _ _ _ Nothing = redirectTemporary RootR
+  updateAndRedirectR' route updates taskId (Just userId) = do
+    runDB $ updateWhere [TaskId ==. taskId, TaskUser ==. userId] updates
+    redirectTemporary route
 
 setTaskDonenessRoute :: (TaskId, Task) -> YesodoroRoute
 setTaskDonenessRoute (taskId, task) = route taskId
@@ -107,7 +110,7 @@ postDeleteTaskR taskId = do
   redirectTemporary TasksR
 
 postTaskAddPomoR :: TaskId -> Handler RepHtml
-postTaskAddPomoR = updateAndRedirect TasksR [TaskPomos +=. 1]
+postTaskAddPomoR = updateAndRedirectR TasksR [TaskPomos +=. 1]
 
 postTaskAddEstimateR :: TaskId -> Handler RepHtml
 postTaskAddEstimateR taskId = maybeAuthId >>= postTaskAddEstimateR' taskId where
