@@ -73,7 +73,7 @@ postTasksR = maybeAuthId >>= postTasksR' where
     ((result, taskWidget), _) <- runFormPost taskForm
     case result of
       FormSuccess task -> do
-        createTaskAtBottom userId task
+        runDB $ createTaskAtBottom userId task
         redirectTemporary TasksR
       _ -> undefined -- TODO
 
