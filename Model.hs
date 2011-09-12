@@ -20,8 +20,14 @@ newtype TaskState = TaskState Text
 
 data NewTask = NewTask { newTaskTitle :: Text } deriving (Show)
 
-newTask :: UserId -> NewTask -> Task
-newTask uid (NewTask title) = Task uid title 0 False
+newTask :: UserId -> Int -> NewTask -> Task
+newTask uid order (NewTask title) = Task uid title 0 False order
+
+
+createTaskAtBottom userId task = do
+  maybeLastTask <- runDB $ selectFirst [TaskUser ==. userId] [Desc TaskOrder]
+  let lastOrder = maybe 0 (taskOrder . snd) maybeLastTask
+  runDB $ insert $ newTask userId (succ lastOrder) task
 
 taskState :: Task -> TaskState
 taskState task = if taskDone task then "done" else "pending"

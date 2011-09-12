@@ -51,7 +51,7 @@ getTasksR = maybeAuth >>= getTasksR' where
         setTitle "tasks"
         addWidget $(widgetFile "tasks")
 
-  userTasks userId = selectList [TaskUser ==. userId] [Asc TaskDone]
+  userTasks userId = selectList [TaskUser ==. userId] [Asc TaskDone, Asc TaskOrder]
   taskEstimates taskId = selectList [EstimateTask ==. taskId] []
   taskTr (taskId, task) estimates = $(widgetFile "tasks/task-tr")
 
@@ -73,8 +73,7 @@ postTasksR = maybeAuthId >>= postTasksR' where
     ((result, taskWidget), _) <- runFormPost taskForm
     case result of
       FormSuccess task -> do
-        let task' = newTask userId task
-        runDB $ insert task'
+        createTaskAtBottom userId task
         redirectTemporary TasksR
       _ -> undefined -- TODO
 

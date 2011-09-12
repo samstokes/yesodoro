@@ -12,6 +12,9 @@ Task
     title Text
     pomos Int default=0
     done Bool default=false
+    order Int
+
+    UniqueTaskOrder user order
 Estimate
     task TaskId
     pomos Int
