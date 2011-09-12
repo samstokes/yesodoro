@@ -138,3 +138,18 @@ postTaskAddEstimateR taskId = maybeAuthId >>= postTaskAddEstimateR' taskId where
 maybeToEither :: String -> Maybe a -> Either String a
 maybeToEither msg Nothing = Left msg
 maybeToEither _ (Just v) = Right v
+
+
+postRaiseTaskR :: TaskId -> Handler RepHtml
+postRaiseTaskR = reorderTaskR Up
+
+postLowerTaskR :: TaskId -> Handler RepHtml
+postLowerTaskR = reorderTaskR Down
+
+reorderTaskR :: Direction -> TaskId -> Handler RepHtml
+reorderTaskR direction taskId = maybeAuthId >>= reorderTaskR' direction taskId where
+  reorderTaskR' :: Direction -> TaskId -> Maybe UserId -> Handler RepHtml
+  reorderTaskR' _ _ Nothing = redirectTemporary RootR
+  reorderTaskR' direction taskId (Just userId) = do
+    runDB $ reorderTask direction [TaskUser ==. userId, TaskId ==. taskId]
+    redirectTemporary TasksR

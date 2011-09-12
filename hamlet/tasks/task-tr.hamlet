@@ -1,4 +1,8 @@
 <tr .task .#{taskState task}
+  <td rowspan=2
+    $if not (taskDone task)
+      ^{oneButton "^" (RaiseTaskR taskId)}
+      ^{oneButton "v" (LowerTaskR taskId)}
   <th .title rowspan=2>#{taskTitle task}
   <td rowspan=2>^{setTaskDonenessButton taskId task}
   <td rowspan=2>^{oneButton "Delete" (DeleteTaskR taskId)}

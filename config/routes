@@ -12,3 +12,5 @@
 /tasks/#TaskId/delete DeleteTaskR POST
 /tasks/#TaskId/pomo TaskAddPomoR POST
 /tasks/#TaskId/estimates TaskAddEstimateR POST
+/tasks/#TaskId/raise RaiseTaskR POST
+/tasks/#TaskId/lower LowerTaskR POST
