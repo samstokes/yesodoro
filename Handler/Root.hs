@@ -52,7 +52,7 @@ getTasksR = maybeAuth >>= getTasksR' where
         setTitle "tasks"
         addWidget $(widgetFile "tasks")
 
-  userTasks userId = selectList [TaskUser ==. userId] [Asc TaskDoneAt, Asc TaskOrder]
+  userTasks userId = selectList [TaskUser ==. userId] [Asc TaskOrder, Desc TaskDoneAt] -- must specify sorts backwards...
   taskEstimates taskId = selectList [EstimateTask ==. taskId] []
   taskTr (taskId, task) estimates = $(widgetFile "tasks/task-tr")
 
