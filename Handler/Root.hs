@@ -3,9 +3,10 @@ module Handler.Root where
 
 import Control.Applicative
 import Control.Monad
-import Data.List (partition)
+import Data.List (groupBy, partition)
 import Data.Monoid
 import Data.Map (Map)
+import Data.Maybe (fromJust)
 import qualified Data.Map as M
 import Data.Text (Text, pack)
 import Data.Text.Read
@@ -45,6 +46,7 @@ getTasksR = maybeAuth >>= getTasksR' where
   getTasksR' (Just (userId, user)) = do
     tasks <- runDB $ userTasks userId
     let (done, pending) = partition (taskDone . snd) tasks
+    let doneByDay = groupByEq (fromJust . taskDoneDay . snd) done
     estimates <- mapM (runDB . taskEstimates . fst) tasks
     let tasksEstimates = M.fromList $ zip (map fst tasks) estimates
     ((_, taskWidget), enctype) <- generateFormPost taskForm
@@ -144,6 +146,15 @@ postTaskAddEstimateR taskId = maybeAuthId >>= postTaskAddEstimateR' taskId where
 maybeToEither :: String -> Maybe a -> Either String a
 maybeToEither msg Nothing = Left msg
 maybeToEither _ (Just v) = Right v
+
+
+eqUnder :: Eq b => (a -> b) -> a -> a -> Bool
+eqUnder f a b = f a == f b
+
+groupByEq :: Eq g => (a -> g) -> [a] -> [(g, [a])]
+groupByEq f as = zip gs groups where
+  groups = groupBy (eqUnder f) as
+  gs = map (f . head) groups
 
 
 postRaiseTaskR :: TaskId -> Handler RepHtml

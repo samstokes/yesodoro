@@ -65,6 +65,12 @@ reorderTask direction filters = do
 taskDone :: Task -> Bool
 taskDone = isJust . taskDoneAt
 
+taskDoneDay :: Task -> Maybe Day
+taskDoneDay = fmap utctDay . taskDoneAt
+
+instance ToHtml Day where
+  toHtml = toHtml . show
+
 taskState :: Task -> TaskState
 taskState task = if taskDone task then "done" else "pending"
 
