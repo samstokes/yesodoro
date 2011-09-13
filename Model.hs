@@ -2,6 +2,7 @@
 module Model where
 
 import Yesod
+import Data.Maybe (isJust)
 import Data.String (IsString)
 import Data.Text (Text)
 import Data.Time
@@ -23,7 +24,7 @@ newtype TaskState = TaskState Text
 data NewTask = NewTask { newTaskTitle :: Text } deriving (Show)
 
 newTask :: UserId -> Int -> NewTask -> Task
-newTask uid order (NewTask title) = Task uid title 0 False Nothing order
+newTask uid order (NewTask title) = Task uid title 0 Nothing order
 
 createTaskAtBottom :: PersistBackend SqlPersist m => UserId -> NewTask -> SqlPersist m TaskId
 createTaskAtBottom userId task = do
@@ -38,7 +39,7 @@ nextTask :: PersistBackend SqlPersist m => Direction -> Task -> SqlPersist m (Ma
 nextTask direction task = selectFirst
     [ TaskUser ==. (taskUser task)
     , (orderConstraint direction) TaskOrder (taskOrder task)
-    , TaskDone ==. False
+    , TaskDoneAt ==. Nothing
     ] [(order direction) TaskOrder]
   where
     orderConstraint Up = (<.)
@@ -60,6 +61,9 @@ reorderTask direction filters = do
           update nextId [TaskOrder =. (taskOrder task)]
           update taskId [TaskOrder =. (taskOrder next)]
 
+
+taskDone :: Task -> Bool
+taskDone = isJust . taskDoneAt
 
 taskState :: Task -> TaskState
 taskState task = if taskDone task then "done" else "pending"

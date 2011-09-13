@@ -9,6 +9,7 @@ import Data.Map (Map)
 import qualified Data.Map as M
 import Data.Text (Text, pack)
 import Data.Text.Read
+import Data.Time
 import Database.Persist.GenericSql.Raw (SqlPersist)
 import Yesod.Auth (maybeAuthId)
 import Yesod.Handler
@@ -51,7 +52,7 @@ getTasksR = maybeAuth >>= getTasksR' where
         setTitle "tasks"
         addWidget $(widgetFile "tasks")
 
-  userTasks userId = selectList [TaskUser ==. userId] [Asc TaskDone, Asc TaskOrder]
+  userTasks userId = selectList [TaskUser ==. userId] [Asc TaskDoneAt, Asc TaskOrder]
   taskEstimates taskId = selectList [EstimateTask ==. taskId] []
   taskTr (taskId, task) estimates = $(widgetFile "tasks/task-tr")
 
@@ -79,10 +80,12 @@ postTasksR = maybeAuthId >>= postTasksR' where
 
 
 postCompleteTaskR :: TaskId -> Handler RepHtml
-postCompleteTaskR = updateAndRedirectR TasksR [TaskDone =. True]
+postCompleteTaskR taskId = do
+  now <- liftIO getCurrentTime
+  updateAndRedirectR TasksR [TaskDoneAt =. Just now] taskId
 
 postRestartTaskR :: TaskId -> Handler RepHtml
-postRestartTaskR = updateAndRedirectR TasksR [TaskDone =. False]
+postRestartTaskR = updateAndRedirectR TasksR [TaskDoneAt =. Nothing]
 
 updateAndRedirectR :: HasReps a => YesodoroRoute -> [Update Task] -> TaskId -> Handler a
 updateAndRedirectR route updates taskId = maybeAuthId >>= updateAndRedirectR' route updates taskId where
