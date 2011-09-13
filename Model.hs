@@ -4,6 +4,7 @@ module Model where
 import Yesod
 import Data.String (IsString)
 import Data.Text (Text)
+import Data.Time
 import Database.Persist.GenericSql.Raw (SqlPersist)
 import Text.Blaze (ToHtml)
 
@@ -22,7 +23,7 @@ newtype TaskState = TaskState Text
 data NewTask = NewTask { newTaskTitle :: Text } deriving (Show)
 
 newTask :: UserId -> Int -> NewTask -> Task
-newTask uid order (NewTask title) = Task uid title 0 False order
+newTask uid order (NewTask title) = Task uid title 0 False Nothing order
 
 createTaskAtBottom :: PersistBackend SqlPersist m => UserId -> NewTask -> SqlPersist m TaskId
 createTaskAtBottom userId task = do

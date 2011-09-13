@@ -12,6 +12,7 @@ Task
     title Text
     pomos Int default=0
     done Bool default=false
+    doneAt UTCTime Maybe
     order Int
 
     UniqueTaskOrder user order

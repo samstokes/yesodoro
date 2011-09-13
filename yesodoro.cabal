@@ -66,6 +66,7 @@ executable         yesodoro
                  , directory
                  , bytestring
                  , text
+                 , time
                  , persistent
                  , persistent-template
                  , persistent-postgresql >= 0.6 && < 0.7
