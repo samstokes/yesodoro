@@ -65,8 +65,8 @@ reorderTask direction filters = do
 taskDone :: Task -> Bool
 taskDone = isJust . taskDoneAt
 
-taskDoneDay :: Task -> Maybe Day
-taskDoneDay = fmap utctDay . taskDoneAt
+taskDoneDay :: TimeZone -> Task -> Maybe Day
+taskDoneDay tz = fmap (localDay . utcToLocalTime tz) . taskDoneAt
 
 instance ToHtml Day where
   toHtml = toHtml . show
