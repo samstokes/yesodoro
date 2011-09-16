@@ -17,7 +17,10 @@ $else
 $if not (null doneByDay)
   <h2>Done
   $forall dayAndTasks <- doneByDay
-    <h3>#{fst dayAndTasks}
+    <h3>
+      #{fst dayAndTasks}
+      $with tasks <- map snd $ snd dayAndTasks
+        \ (#{sum $ map taskPomos tasks})
     <table><tbody>
       $forall idAndTask <- snd dayAndTasks
         $with estimates <- M.findWithDefault mempty (fst idAndTask) tasksEstimates
