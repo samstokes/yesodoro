@@ -48,7 +48,7 @@ getTasksR = maybeAuth >>= getTasksR' where
     let (done, pending) = partition (taskDone . snd) tasks
     timeZone <- liftIO getCurrentTimeZone
     let doneByDay = groupByEq (fromJust . taskDoneDay timeZone . snd) done
-    estimates <- mapM (runDB . taskEstimates . fst) tasks
+    estimates <- runDB $ mapM (taskEstimates . fst) tasks
     let tasksEstimates = M.fromList $ zip (map fst tasks) estimates
     ((_, taskWidget), enctype) <- generateFormPost taskForm
     defaultLayout $ do
