@@ -9,6 +9,13 @@ $else
     $forall idAndTaskEstimates <- pending
       ^{taskTr idAndTaskEstimates}
 
+  <h3
+    Remaining: #{sum $ map estimatedRemaining $ map snd pending} of
+    $with idsAndEstimates <- map snd $ map snd pending
+      $with firstEstimates <- map snd $ concatMap (take 1) idsAndEstimates
+        $with totalEstimated <- sum $ map estimatePomos firstEstimates
+          \ #{totalEstimated} estimated
+
 <form method=POST action=@{TasksR} enctype=#{enctype}
   ^{taskWidget}
   <input type=submit value=Add

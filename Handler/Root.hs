@@ -60,6 +60,9 @@ getTasksR = maybeAuth >>= getTasksR' where
   userTasks userId = selectList [TaskUser ==. userId] [Asc TaskOrder, Desc TaskDoneAt] -- must specify sorts backwards...
   taskEstimates taskId = selectList [EstimateTask ==. taskId] []
   taskTr (taskId, (task, estimates)) = $(widgetFile "tasks/task-tr")
+  estimatedRemaining :: (Task, [(EstimateId, Estimate)]) -> Int
+  estimatedRemaining (_, []) = 0
+  estimatedRemaining (task, ((_, estimate) : _)) = (estimatePomos estimate - taskPomos task) `max` 0
 
 
 oneButton :: Text -> YesodoroRoute -> Widget
