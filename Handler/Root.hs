@@ -5,9 +5,7 @@ import Control.Applicative
 import Control.Monad
 import Data.List (groupBy, partition)
 import Data.Monoid
-import Data.Map (Map)
 import Data.Maybe (fromJust)
-import qualified Data.Map as M
 import Data.Text (Text, pack)
 import Data.Text.Read
 import Data.Time
@@ -45,11 +43,15 @@ getTasksR = maybeAuth >>= getTasksR' where
 
   getTasksR' (Just (userId, user)) = do
     tasks <- runDB $ userTasks userId
-    let (done, pending) = partition (taskDone . snd) tasks
-    timeZone <- liftIO getCurrentTimeZone
-    let doneByDay = groupByEq (fromJust . taskDoneDay timeZone . snd) done
+
     estimates <- runDB $ mapM (taskEstimates . fst) tasks
-    let tasksEstimates = M.fromList $ (map fst tasks) `zip` estimates
+    let tasksEstimates :: [(TaskId, (Task, [(EstimateId, Estimate)]))]
+        tasksEstimates = (map fst tasks) `zip` ((map snd tasks) `zip` estimates)
+
+    let (done, pending) = partition (taskDone . fst . snd) tasksEstimates
+
+    timeZone <- liftIO getCurrentTimeZone
+    let doneByDay = groupByEq (fromJust . taskDoneDay timeZone . fst . snd) done
     ((_, taskWidget), enctype) <- generateFormPost taskForm
     defaultLayout $ do
         setTitle "tasks"
@@ -57,7 +59,7 @@ getTasksR = maybeAuth >>= getTasksR' where
 
   userTasks userId = selectList [TaskUser ==. userId] [Asc TaskOrder, Desc TaskDoneAt] -- must specify sorts backwards...
   taskEstimates taskId = selectList [EstimateTask ==. taskId] []
-  taskTr (taskId, task) estimates = $(widgetFile "tasks/task-tr")
+  taskTr (taskId, (task, estimates)) = $(widgetFile "tasks/task-tr")
 
 
 oneButton :: Text -> YesodoroRoute -> Widget

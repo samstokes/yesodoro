@@ -6,9 +6,8 @@ $if null pending
   <p>Nothing to do. Congratulations! Why not take the day off?
 $else
   <table><tbody>
-    $forall idAndTask <- pending
-      $with estimates <- M.findWithDefault mempty (fst idAndTask) tasksEstimates
-        ^{taskTr idAndTask estimates}
+    $forall idAndTaskEstimates <- pending
+      ^{taskTr idAndTaskEstimates}
 
 <form method=POST action=@{TasksR} enctype=#{enctype}
   ^{taskWidget}
@@ -16,12 +15,11 @@ $else
 
 $if not (null doneByDay)
   <h2>Done
-  $forall dayAndTasks <- doneByDay
+  $forall dayAndTasksEstimates <- doneByDay
     <h3
-      #{fst dayAndTasks}
-      $with tasks <- map snd $ snd dayAndTasks
+      #{fst dayAndTasksEstimates}
+      $with tasks <- map fst $ map snd $ snd dayAndTasksEstimates
         \ (#{sum $ map taskPomos tasks})
     <table><tbody>
-      $forall idAndTask <- snd dayAndTasks
-        $with estimates <- M.findWithDefault mempty (fst idAndTask) tasksEstimates
-          ^{taskTr idAndTask estimates}
+      $forall idAndTaskEstimates <- snd dayAndTasksEstimates
+        ^{taskTr idAndTaskEstimates}
