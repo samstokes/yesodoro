@@ -17,7 +17,7 @@ $else
 $if not (null doneByDay)
   <h2>Done
   $forall dayAndTasks <- doneByDay
-    <h3>
+    <h3
       #{fst dayAndTasks}
       $with tasks <- map snd $ snd dayAndTasks
         \ (#{sum $ map taskPomos tasks})
