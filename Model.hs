@@ -17,6 +17,10 @@ import Text.Blaze (ToHtml)
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] $(persistFile "config/models")
 
 
+compareBy :: Ord a => (b -> a) -> b -> b -> Ordering
+compareBy f x y = compare (f x) (f y)
+
+
 newtype TaskState = TaskState Text
   deriving (ToHtml, IsString)
 

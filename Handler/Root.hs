@@ -3,7 +3,7 @@ module Handler.Root where
 
 import Control.Applicative
 import Control.Monad
-import Data.List (groupBy, partition)
+import Data.List (groupBy, partition, sortBy)
 import Data.Monoid
 import Data.Maybe (fromJust)
 import Data.Text (Text, pack)
@@ -47,7 +47,9 @@ getTasksR = authed (\userId -> do
   let tasksEstimates :: [(TaskId, (Task, [(EstimateId, Estimate)]))]
       tasksEstimates = (map fst tasks) `zip` ((map snd tasks) `zip` estimates)
 
-  let (done, pending) = partition (taskDone . fst . snd) tasksEstimates
+  let (unsortedDone, unsortedPending) = partition (taskDone . fst . snd) tasksEstimates
+  let done = reverse $ sortBy (compareBy $ taskDoneAt . fst . snd) unsortedDone
+  let pending = sortBy (compareBy $ taskOrder . fst . snd) unsortedPending
 
   timeZone <- liftIO getCurrentTimeZone
   let doneByDay = groupByEq (fromJust . taskDoneDay timeZone . fst . snd) done
@@ -56,7 +58,7 @@ getTasksR = authed (\userId -> do
       setTitle "tasks"
       addWidget $(widgetFile "tasks")) where
 
-  userTasks userId = selectList [TaskUser ==. userId] [Asc TaskOrder, Desc TaskDoneAt] -- must specify sorts backwards...
+  userTasks userId = selectList [TaskUser ==. userId] [Desc TaskDoneAt]
   taskEstimates taskId = selectList [EstimateTask ==. taskId] []
   taskTr (taskId, (task, estimates)) = $(widgetFile "tasks/task-tr")
   estimatedRemaining :: (Task, [(EstimateId, Estimate)]) -> Int
