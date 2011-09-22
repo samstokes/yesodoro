@@ -2,16 +2,16 @@
 
 <h2>TODO
 
-$if null pending
+$if null todo
   <p>Nothing to do. Congratulations! Why not take the day off?
 $else
   <table><tbody>
-    $forall idAndTaskEstimates <- pending
-      ^{taskTr idAndTaskEstimates}
+    $forall idAndTaskEstimates <- todo
+      ^{taskTr taskTodoToday idAndTaskEstimates}
 
   <h3
-    Remaining: #{sum $ map estimatedRemaining $ map snd pending} of
-    $with idsAndEstimates <- map snd $ map snd pending
+    Remaining: #{sum $ map estimatedRemaining $ map snd todo} of
+    $with idsAndEstimates <- map snd $ map snd todo
       $with firstEstimates <- map snd $ concatMap (take 1) idsAndEstimates
         $with totalEstimated <- sum $ map estimatePomos firstEstimates
           \ #{totalEstimated} estimated
@@ -19,6 +19,14 @@ $else
 <form method=POST action=@{TasksR} enctype=#{enctype}
   ^{taskWidget}
   <input type=submit value=Add
+
+
+$if not (null later)
+  <h2>Later
+  <table><tbody>
+    $forall idAndTaskEstimates <- later
+      ^{taskTr taskTodoToday idAndTaskEstimates}
+
 
 $if not (null doneByDay)
   <h2>Done
@@ -29,4 +37,4 @@ $if not (null doneByDay)
         \ (#{sum $ map taskPomos tasks})
     <table><tbody>
       $forall idAndTaskEstimates <- snd dayAndTasksEstimates
-        ^{taskTr idAndTaskEstimates}
+        ^{taskTr taskTodoToday idAndTaskEstimates}

@@ -14,3 +14,5 @@
 /tasks/#TaskId/estimates TaskAddEstimateR POST
 /tasks/#TaskId/raise RaiseTaskR POST
 /tasks/#TaskId/lower LowerTaskR POST
+/tasks/#TaskId/postpone PostponeTaskR POST
+/tasks/#TaskId/activate ActivateTaskR POST

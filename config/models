@@ -11,6 +11,7 @@ Task
     user UserId
     title Text
     pomos Int default=0
+    scheduledFor UTCTime default=now()
     doneAt UTCTime Maybe
     order Int
 

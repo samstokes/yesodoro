@@ -27,37 +27,41 @@ newtype TaskState = TaskState Text
 
 data NewTask = NewTask { newTaskTitle :: Text } deriving (Show)
 
-newTask :: UserId -> Int -> NewTask -> Task
-newTask uid order (NewTask title) = Task uid title 0 Nothing order
+newTask :: UserId -> UTCTime -> Int -> NewTask -> Task
+newTask uid scheduledFor order (NewTask title) = Task uid title 0 scheduledFor Nothing order
 
 createTaskAtBottom :: PersistBackend SqlPersist m => UserId -> NewTask -> SqlPersist m TaskId
 createTaskAtBottom userId task = do
+  now <- liftIO getCurrentTime
   maybeLastTask <- selectFirst [TaskUser ==. userId] [Desc TaskOrder]
   let lastOrder = maybe 0 (taskOrder . snd) maybeLastTask
-  insert $ newTask userId (succ lastOrder) task
+  insert $ newTask userId now (succ lastOrder) task
 
 
 data Direction = Up | Down deriving (Show, Enum, Bounded)
 
-nextTask :: PersistBackend SqlPersist m => Direction -> Task -> SqlPersist m (Maybe (TaskId, Task))
-nextTask direction task = selectFirst
+nextTask :: PersistBackend SqlPersist m => Direction -> UTCTime -> Task -> SqlPersist m (Maybe (TaskId, Task))
+nextTask direction endOfToday task = selectFirst
     [ TaskUser ==. (taskUser task)
     , (orderConstraint direction) TaskOrder (taskOrder task)
     , TaskDoneAt ==. Nothing
+    , scheduledForConstraint TaskScheduledFor
     ] [(order direction) TaskOrder]
   where
     orderConstraint Up = (<.)
     orderConstraint Down = (>.)
     order Up = Desc
     order Down = Asc
+    scheduledForConstraint | taskScheduledFor task <= endOfToday = (<=. endOfToday)
+                           | otherwise                           = (>. endOfToday)
 
-reorderTask :: PersistBackend SqlPersist m => Direction -> [Filter Task] -> SqlPersist m ()
-reorderTask direction filters = do
+reorderTask :: PersistBackend SqlPersist m => Direction -> UTCTime -> [Filter Task] -> SqlPersist m ()
+reorderTask direction endOfToday filters = do
   maybeTask <- selectFirst filters []
   case maybeTask of
     Nothing -> return ()
     Just (taskId, task) -> do
-      maybeNext <- nextTask direction task
+      maybeNext <- nextTask direction endOfToday task
       case maybeNext of
         Nothing -> return ()
         Just (nextId, next) -> do
@@ -69,8 +73,29 @@ reorderTask direction filters = do
 taskDone :: Task -> Bool
 taskDone = isJust . taskDoneAt
 
+
+taskTodo :: TimeZone -> UTCTime -> Task -> Bool
+taskTodo tz now = (<= today) . taskScheduledForDay tz
+  where today = utcToLocalDay tz now
+
+utcToLocalDay :: TimeZone -> UTCTime -> Day
+utcToLocalDay tz = localDay . utcToLocalTime tz
+
+localEndOfDay :: LocalTime -> LocalTime
+localEndOfDay time = time { localTimeOfDay = TimeOfDay 23 59 59 }
+
+locally :: TimeZone -> (LocalTime -> LocalTime) -> UTCTime -> UTCTime
+locally tz f = localTimeToUTC tz . f . utcToLocalTime tz
+
+tomorrow :: UTCTime -> UTCTime
+tomorrow = addUTCTime oneDay
+  where oneDay = 24 * 60 * 60
+
 taskDoneDay :: TimeZone -> Task -> Maybe Day
-taskDoneDay tz = fmap (localDay . utcToLocalTime tz) . taskDoneAt
+taskDoneDay tz = fmap (utcToLocalDay tz) . taskDoneAt
+
+taskScheduledForDay :: TimeZone -> Task -> Day
+taskScheduledForDay tz = utcToLocalDay tz . taskScheduledFor
 
 instance ToHtml Day where
   toHtml = toHtml . show
@@ -84,3 +109,15 @@ taskActionName task | taskDone task = "Restart"
 
 estimateOptions :: [Int]
 estimateOptions = [2 ^ x | x <- [0 .. 4]]
+
+
+myTask :: PersistBackend SqlPersist m => UserId -> TaskId -> SqlPersist m (Maybe (TaskId, Task))
+myTask userId taskId = selectFirst [TaskUser ==. userId, TaskId ==. taskId] []
+
+
+postponeTask :: PersistBackend SqlPersist m => (TaskId, Task) -> SqlPersist m ()
+postponeTask (taskId, task) = update taskId [TaskScheduledFor =. tomorrow (taskScheduledFor task)]
+
+
+activateTask :: PersistBackend SqlPersist m => UTCTime -> TaskId -> SqlPersist m ()
+activateTask now taskId = update taskId [TaskScheduledFor =. now]

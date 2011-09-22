@@ -47,20 +47,26 @@ getTasksR = authed (\userId -> do
   let tasksEstimates :: [(TaskId, (Task, [(EstimateId, Estimate)]))]
       tasksEstimates = (map fst tasks) `zip` ((map snd tasks) `zip` estimates)
 
-  let (unsortedDone, unsortedPending) = partition (taskDone . fst . snd) tasksEstimates
-  let done = reverse $ sortBy (compareBy $ taskDoneAt . fst . snd) unsortedDone
-  let pending = sortBy (compareBy $ taskOrder . fst . snd) unsortedPending
-
   timeZone <- liftIO getCurrentTimeZone
+  now <- liftIO getCurrentTime
+  let taskTodoToday :: Task -> Bool
+      taskTodoToday = taskTodo timeZone now
+
+  let (unsortedDone, pending) = partition (taskDone . fst . snd) tasksEstimates
+  let done = reverse $ sortBy (compareBy $ taskDoneAt . fst . snd) unsortedDone
+  let (unsortedTodo, unsortedLater) = partition (taskTodoToday . fst . snd) pending
+  let todo = sortBy (compareBy $ taskOrder . fst . snd) unsortedTodo
+  let later = sortBy (compareBy $ taskOrder . fst . snd) unsortedLater
+
   let doneByDay = groupByEq (fromJust . taskDoneDay timeZone . fst . snd) done
   ((_, taskWidget), enctype) <- generateFormPost taskForm
   defaultLayout $ do
       setTitle "tasks"
       addWidget $(widgetFile "tasks")) where
 
-  userTasks userId = selectList [TaskUser ==. userId] [Desc TaskDoneAt]
+  userTasks userId = selectList [TaskUser ==. userId] [Asc TaskScheduledFor, Desc TaskDoneAt] -- must specify sorts backwards...
   taskEstimates taskId = selectList [EstimateTask ==. taskId] []
-  taskTr (taskId, (task, estimates)) = $(widgetFile "tasks/task-tr")
+  taskTr taskTodoToday (taskId, (task, estimates)) = $(widgetFile "tasks/task-tr")
   estimatedRemaining :: (Task, [(EstimateId, Estimate)]) -> Int
   estimatedRemaining (_, []) = 0
   estimatedRemaining (task, ((_, estimate) : _)) = (estimatePomos estimate - taskPomos task) `max` 0
@@ -163,5 +169,30 @@ postLowerTaskR = reorderTaskR Down
 
 reorderTaskR :: Direction -> TaskId -> Handler RepHtml
 reorderTaskR direction taskId = authed (\userId -> do
-  runDB $ reorderTask direction [TaskUser ==. userId, TaskId ==. taskId]
+  utcNow <- liftIO getCurrentTime
+  tz <- liftIO getCurrentTimeZone
+  let endOfToday = locally tz localEndOfDay utcNow
+
+  runDB $ reorderTask direction endOfToday [TaskUser ==. userId, TaskId ==. taskId]
+  redirectTemporary TasksR)
+
+
+postPostponeTaskR :: TaskId -> Handler RepHtml
+postPostponeTaskR taskId = authed (\userId -> do
+  runDB $ do
+    task <- myTask userId taskId
+    case task of
+      Nothing -> return ()
+      Just task -> postponeTask task
+  redirectTemporary TasksR)
+
+
+postActivateTaskR :: TaskId -> Handler RepHtml
+postActivateTaskR taskId = authed (\userId -> do
+  now <- liftIO getCurrentTime
+  runDB $ do
+    task <- myTask userId taskId
+    case task of
+      Nothing -> return ()
+      Just (taskId, _) -> activateTask now taskId
   redirectTemporary TasksR)
