@@ -27,8 +27,8 @@ redirectTemporary = redirect RedirectTemporary
 -- functions. You can spread them across multiple files if you are so
 -- inclined, or create a single monolithic file.
 getRootR :: Handler RepHtml
-getRootR = maybeAuth >>= getRootR' where
-  getRootR' :: Maybe (UserId, User) -> Handler RepHtml
+getRootR = maybeAuthId >>= getRootR' where
+  getRootR' :: Maybe UserId -> Handler RepHtml
   getRootR' Nothing = defaultLayout $ do
         setTitle "yesodoro"
         addWidget $(widgetFile "homepage")
