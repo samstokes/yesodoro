@@ -39,6 +39,15 @@ authed :: HasReps a => (UserId -> Handler a) -> Handler a
 authed handler = maybeAuthId >>= maybe (redirectTemporary RootR) handler
 
 
+authedTask :: HasReps a => ((TaskId, Task) -> Handler a) -> TaskId -> Handler a
+authedTask handler taskId = authed (\userId -> do
+    maybeAuthedTask <- runDB $ selectFirst [TaskId ==. taskId, TaskUser ==. userId] []
+    case maybeAuthedTask of
+      Just task -> handler task
+      Nothing -> redirectTemporary TasksR)
+
+
+
 getTasksR :: Handler RepHtml
 getTasksR = authed (\userId -> do
   tasks <- runDB $ userTasks userId
@@ -92,16 +101,16 @@ postTasksR = authed (\userId -> do
 
 
 postCompleteTaskR :: TaskId -> Handler RepHtml
-postCompleteTaskR taskId = do
+postCompleteTaskR = authedTask (\(taskId, _) -> do
   now <- liftIO getCurrentTime
-  updateAndRedirectR TasksR [TaskDoneAt =. Just now] taskId
+  updateAndRedirectR TasksR [TaskDoneAt =. Just now] taskId)
 
 postRestartTaskR :: TaskId -> Handler RepHtml
 postRestartTaskR = updateAndRedirectR TasksR [TaskDoneAt =. Nothing]
 
 updateAndRedirectR :: HasReps a => YesodoroRoute -> [Update Task] -> TaskId -> Handler a
-updateAndRedirectR route updates taskId = authed (\userId -> do
-  runDB $ updateWhere [TaskId ==. taskId, TaskUser ==. userId] updates
+updateAndRedirectR route updates = authedTask (\(taskId, _) -> do
+  runDB $ update taskId updates
   redirectTemporary route)
 
 setTaskDonenessRoute :: (TaskId, Task) -> YesodoroRoute
@@ -116,36 +125,26 @@ setTaskDonenessButton taskId task = oneButton action (route taskId)
               | otherwise     = CompleteTaskR
 
 postDeleteTaskR :: TaskId -> Handler RepHtml
-postDeleteTaskR taskId = do
+postDeleteTaskR = authedTask (\(taskId, _) -> do
   runDB $ deleteWhere [EstimateTask ==. taskId]
   runDB $ delete taskId
-  redirectTemporary TasksR
+  redirectTemporary TasksR)
 
 postTaskAddPomoR :: TaskId -> Handler RepHtml
 postTaskAddPomoR = updateAndRedirectR TasksR [TaskPomos +=. 1]
 
 postTaskAddEstimateR :: TaskId -> Handler RepHtml
-postTaskAddEstimateR taskId = authed (\userId -> do
-  authzedTaskId <- checkAuthz userId taskId
+postTaskAddEstimateR = authedTask (\(taskId, _) -> do
   pomosParam <- lookupPostParam "pomos"
   let pomos = do
       param <- maybeToEither "no pomos" $ pomosParam
       (num, _) <- decimal param
       return num
-  postTaskAddEstimateR'' authzedTaskId pomos) where
-
-  checkAuthz :: UserId -> TaskId -> Handler (Maybe TaskId)
-  checkAuthz userId taskId = do
-    maybeIdAndTask <- runDB $ selectFirst [TaskId ==. taskId, TaskUser ==. userId] []
-    return $ fmap fst maybeIdAndTask
-
-  postTaskAddEstimateR'' :: Maybe TaskId -> Either String Int -> Handler RepHtml
-  postTaskAddEstimateR'' (Just taskId) (Right pomos) = do
-    runDB $ insert $ Estimate taskId pomos
-    redirectTemporary TasksR
-  postTaskAddEstimateR'' authzedTask pomosOrError = do
-    $(logInfo) $ pack $ "task: " ++ show authzedTask ++ "; pomos: " ++ show pomosOrError
-    redirectTemporary TasksR
+  case pomos of
+    (Right numPomos) -> do
+      runDB $ insert $ Estimate taskId numPomos
+      redirectTemporary TasksR
+    Left msg -> error msg) -- TODO
 
 maybeToEither :: String -> Maybe a -> Either String a
 maybeToEither msg Nothing = Left msg
@@ -168,31 +167,23 @@ postLowerTaskR :: TaskId -> Handler RepHtml
 postLowerTaskR = reorderTaskR Down
 
 reorderTaskR :: Direction -> TaskId -> Handler RepHtml
-reorderTaskR direction taskId = authed (\userId -> do
+reorderTaskR direction = authedTask (\task -> do
   utcNow <- liftIO getCurrentTime
   tz <- liftIO getCurrentTimeZone
   let endOfToday = locally tz localEndOfDay utcNow
 
-  runDB $ reorderTask direction endOfToday [TaskUser ==. userId, TaskId ==. taskId]
+  runDB $ reorderTask direction endOfToday task
   redirectTemporary TasksR)
 
 
 postPostponeTaskR :: TaskId -> Handler RepHtml
-postPostponeTaskR taskId = authed (\userId -> do
-  runDB $ do
-    task <- myTask userId taskId
-    case task of
-      Nothing -> return ()
-      Just task -> postponeTask task
+postPostponeTaskR = authedTask (\task -> do
+  runDB $ postponeTask task
   redirectTemporary TasksR)
 
 
 postActivateTaskR :: TaskId -> Handler RepHtml
-postActivateTaskR taskId = authed (\userId -> do
+postActivateTaskR = authedTask (\(taskId, _) -> do
   now <- liftIO getCurrentTime
-  runDB $ do
-    task <- myTask userId taskId
-    case task of
-      Nothing -> return ()
-      Just (taskId, _) -> activateTask now taskId
+  runDB $ activateTask now taskId
   redirectTemporary TasksR)

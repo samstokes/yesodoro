@@ -55,19 +55,15 @@ nextTask direction endOfToday task = selectFirst
     scheduledForConstraint | taskScheduledFor task <= endOfToday = (<=. endOfToday)
                            | otherwise                           = (>. endOfToday)
 
-reorderTask :: PersistBackend SqlPersist m => Direction -> UTCTime -> [Filter Task] -> SqlPersist m ()
-reorderTask direction endOfToday filters = do
-  maybeTask <- selectFirst filters []
-  case maybeTask of
+reorderTask :: PersistBackend SqlPersist m => Direction -> UTCTime -> (TaskId, Task) -> SqlPersist m ()
+reorderTask direction endOfToday (taskId, task) = do
+  maybeNext <- nextTask direction endOfToday task
+  case maybeNext of
     Nothing -> return ()
-    Just (taskId, task) -> do
-      maybeNext <- nextTask direction endOfToday task
-      case maybeNext of
-        Nothing -> return ()
-        Just (nextId, next) -> do
-          update taskId [TaskOrder =. (-1)] -- temporary value
-          update nextId [TaskOrder =. (taskOrder task)]
-          update taskId [TaskOrder =. (taskOrder next)]
+    Just (nextId, next) -> do
+      update taskId [TaskOrder =. (-1)] -- temporary value
+      update nextId [TaskOrder =. (taskOrder task)]
+      update taskId [TaskOrder =. (taskOrder next)]
 
 
 taskDone :: Task -> Bool
@@ -109,10 +105,6 @@ taskActionName task | taskDone task = "Restart"
 
 estimateOptions :: [Int]
 estimateOptions = [2 ^ x | x <- [0 .. 4]]
-
-
-myTask :: PersistBackend SqlPersist m => UserId -> TaskId -> SqlPersist m (Maybe (TaskId, Task))
-myTask userId taskId = selectFirst [TaskUser ==. userId, TaskId ==. taskId] []
 
 
 postponeTask :: PersistBackend SqlPersist m => (TaskId, Task) -> SqlPersist m ()
