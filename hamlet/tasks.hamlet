@@ -7,7 +7,7 @@ $if null todo
 $else
   <table><tbody>
     $forall idAndTaskEstimates <- todo
-      ^{taskTr taskTodoToday idAndTaskEstimates}
+      ^{taskTr taskTodoToday taskDueClass idAndTaskEstimates}
 
   <h3
     Remaining: #{sum $ map estimatedRemaining $ map snd todo} of
@@ -25,7 +25,7 @@ $if not (null later)
   <h2>Later
   <table><tbody>
     $forall idAndTaskEstimates <- later
-      ^{taskTr taskTodoToday idAndTaskEstimates}
+      ^{taskTr taskTodoToday taskDueClass idAndTaskEstimates}
 
 
 $if not (null doneByDay)
@@ -37,4 +37,4 @@ $if not (null doneByDay)
         \ (#{sum $ map taskPomos tasks})
     <table><tbody>
       $forall idAndTaskEstimates <- snd dayAndTasksEstimates
-        ^{taskTr taskTodoToday idAndTaskEstimates}
+        ^{taskTr taskTodoToday taskDueClass idAndTaskEstimates}

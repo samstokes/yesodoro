@@ -2,3 +2,5 @@
     text-align: left
 .task.done .title, .task.done .estimate, .task.done .pomos
     text-decoration: line-through
+.task.overdue .title
+    color: red

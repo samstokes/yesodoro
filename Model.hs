@@ -74,6 +74,10 @@ taskTodo :: TimeZone -> UTCTime -> Task -> Bool
 taskTodo tz now = (<= today) . taskScheduledForDay tz
   where today = utcToLocalDay tz now
 
+taskOverdue :: TimeZone -> UTCTime -> Task -> Bool
+taskOverdue tz now task = not (taskDone task) && taskScheduledForDay tz task < today
+  where today = utcToLocalDay tz now
+
 utcToLocalDay :: TimeZone -> UTCTime -> Day
 utcToLocalDay tz = localDay . utcToLocalTime tz
 

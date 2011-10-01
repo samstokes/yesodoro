@@ -65,6 +65,11 @@ getTasksR = authed (\userId -> do
   now <- liftIO getCurrentTime
   let taskTodoToday :: Task -> Bool
       taskTodoToday = taskTodo timeZone now
+      taskOverdueToday :: Task -> Bool
+      taskOverdueToday = taskOverdue timeZone now
+      taskDueClass :: Task -> Maybe String
+      taskDueClass task | taskOverdueToday task = Just "overdue"
+                        | otherwise             = Nothing
 
   let (unsortedDone, pending) = partition (taskDone . fst . snd) tasksEstimates
   let done = reverse $ sortBy (compareBy $ taskDoneAt . fst . snd) unsortedDone
@@ -80,7 +85,7 @@ getTasksR = authed (\userId -> do
 
   userTasks userId = selectList [TaskUser ==. userId] [Asc TaskScheduledFor, Desc TaskDoneAt] -- must specify sorts backwards...
   taskEstimates taskId = selectList [EstimateTask ==. taskId] []
-  taskTr taskTodoToday (taskId, (task, estimates)) = $(widgetFile "tasks/task-tr")
+  taskTr taskTodoToday taskDueClass (taskId, (task, estimates)) = $(widgetFile "tasks/task-tr")
   estimatedRemaining :: (Task, [(EstimateId, Estimate)]) -> Int
   estimatedRemaining (_, []) = 0
   estimatedRemaining (task, ((_, estimate) : _)) = (estimatePomos estimate - taskPomos task) `max` 0
