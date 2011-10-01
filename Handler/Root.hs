@@ -10,9 +10,14 @@ import Data.Text (Text, pack)
 import Data.Text.Read
 import Data.Time
 import Database.Persist.GenericSql.Raw (SqlPersist)
+import Text.Blaze (ToHtml)
 import Yesod.Auth (maybeAuthId)
 import Yesod.Handler
 import Foundation
+
+
+instance ToHtml a => ToHtml (Maybe a) where
+  toHtml = maybe "" toHtml
 
 
 redirectTemporary :: HasReps a => YesodoroRoute -> Handler a
