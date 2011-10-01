@@ -112,7 +112,9 @@ estimateOptions = [2 ^ x | x <- [0 .. 4]]
 
 
 postponeTask :: PersistBackend SqlPersist m => (TaskId, Task) -> SqlPersist m ()
-postponeTask (taskId, task) = update taskId [TaskScheduledFor =. tomorrow (taskScheduledFor task)]
+postponeTask (taskId, task) = do
+  now <- liftIO getCurrentTime
+  update taskId [TaskScheduledFor =. tomorrow now]
 
 
 activateTask :: PersistBackend SqlPersist m => UTCTime -> TaskId -> SqlPersist m ()
